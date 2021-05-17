@@ -1,5 +1,5 @@
 BootStrap: docker
-From: continuumio/miniconda3:4.7.12
+From: ubuntu:20.04
 
 %apprun rsem-bam2readdepth
   exec rsem-bam2readdepth "${@}"
@@ -89,17 +89,27 @@ From: continuumio/miniconda3:4.7.12
   exec rsem-tbam2gbam "${@}"
 
 %post
+  # XXX: To avoid interactive dialogue
+  export DEBIAN_FRONTEND=noninteractive && \
+  ln -snf /usr/share/zoneinfo/UTC /etc/localtime && echo UTC > /etc/timezone && \
   apt-get update && \
-  apt-get install -y wget && \
-  apt-get clean
-
-%post
-  RSEM_VER=1.3.3 &&
-  cd /usr/local/src && \
+  apt-get install -y \
+    less \
+    build-essential \
+    wget \
+    perl \
+    perl-doc \
+    r-base &&
+  apt-get clean && \
+  export RSEM_VER=1.3.3 && \
+  mkdir -p /tmp/src && \
+  cd /tmp/src && \
   wget https://github.com/deweylab/RSEM/archive/v${RSEM_VER}.tar.gz  &&\
   tar xzf v${RSEM_VER}.tar.gz && \
   cd RSEM-${RSEM_VER} && \
   make && \
   make ebseq && \
   make install && \
-  cp rsem-* /usr/local/bin
+  find . -name "rsem-*" | xargs -i cp {} /usr/local/bin && \
+  cp -r EBSeq /usr/local/bin && \
+  rm -rf /tmp/src
